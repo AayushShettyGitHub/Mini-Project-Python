@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if title %}{{ title }} - {% endif %}Shop</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('buyer.home') }}">
+                <i class="fas fa-store me-2"></i> Online Store
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('buyer.home') %}active{% endif %}" href="{{ url_for('buyer.home') }}">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="categoriesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-tags"></i> Categories
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="categoriesDropdown">
+                            {% for category in categories %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('buyer.category_products', id=category.id) }}">
+                                    {{ category.name }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <a href="{{ url_for('buyer.cart') }}" class="btn btn-outline-light position-relative">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="visually-hidden">Cart</span>
+                        {% if session.get('cart') %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ session.get('cart')|length }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container">
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Main Content -->
+    <div class="container py-3">
+        {% if detail_mode %}
+        <!-- Product Detail View -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('buyer.home') }}">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('buyer.category_products', id=product.category_id) }}">{{ product.category.name }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-4 mb-md-0">
+                        <div class="p-4 bg-dark rounded">
+                            <i class="fas fa-box-open fa-6x text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <h1 class="h2 mb-2">{{ product.name }}</h1>
+                        <p class="badge bg-primary mb-3">{{ product.category.name }}</p>
+                        <p class="lead">{{ product.description }}</p>
+                        
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="h3 mb-0 me-3 text-primary">${{ product.price|round(2) }}</div>
+                            <div class="small">
+                                <span class="badge {% if product.stock <= 5 %}bg-danger{% elif product.stock <= 20 %}bg-warning{% else %}bg-success{% endif %}">
+                                    {{ product.stock }} in stock
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <form action="{{ url_for('buyer.add_to_cart', id=product.id) }}" method="POST">
+                            <div class="input-group mb-3 w-md-50">
+                                <span class="input-group-text">Quantity</span>
+                                <input type="number" name="quantity" class="form-control" value="1" min="1" max="{{ product.stock }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-cart-plus me-2"></i> Add to Cart
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommended Products -->
+        {% if recommended %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="mb-4">You might also like</h2>
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+                    {% for product in recommended %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <i class="fas fa-box-open fa-4x text-primary"></i>
+                                </div>
+                                <h5 class="card-title">{{ product.name }}</h5>
+                                <p class="card-text text-primary h5">${{ product.price|round(2) }}</p>
+                            </div>
+                            <div class="card-footer d-grid">
+                                <a href="{{ url_for('buyer.product_detail', id=product.id) }}" class="btn btn-outline-secondary">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <!-- Product Listing View -->
+        <div class="row mb-4">
+            {% if current_category %}
+            <div class="col-12">
+                <h1 class="display-5">{{ current_category.name }}</h1>
+                <p class="text-muted">Browse all products in this category.</p>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <h1 class="display-5">Shop Products</h1>
+                <p class="text-muted">Browse our collection of products.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="row">
+            <!-- Sidebar with Categories -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Categories</h5>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('buyer.home') }}" class="list-group-item list-group-item-action {% if not current_category %}active{% endif %}">
+                            All Products
+                        </a>
+                        {% for category in categories %}
+                        <a href="{{ url_for('buyer.category_products', id=category.id) }}" class="list-group-item list-group-item-action {% if current_category and current_category.id == category.id %}active{% endif %}">
+                            {{ category.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Products Grid -->
+            <div class="col-md-9">
+                {% if products %}
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+                    {% for product in products %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="mb-3">
+                                    <i class="fas fa-box-open fa-4x text-primary"></i>
+                                </div>
+                                <h5 class="card-title">{{ product.name }}</h5>
+                                <p class="card-text text-primary h5">${{ product.price|round(2) }}</p>
+                                <p class="card-text small">
+                                    <span class="badge {% if product.stock <= 5 %}bg-danger{% elif product.stock <= 20 %}bg-warning{% else %}bg-success{% endif %}">
+                                        {{ product.stock }} in stock
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="card-footer d-flex">
+                                <a href="{{ url_for('buyer.product_detail', id=product.id) }}" class="btn btn-outline-secondary flex-grow-1 me-2">View</a>
+                                <form action="{{ url_for('buyer.add_to_cart', id=product.id) }}" method="POST">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-cart-plus"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-box-open fa-4x mb-3 text-muted"></i>
+                    <h3>No products found</h3>
+                    <p class="text-muted">No products are available in this category.</p>
+                    <a href="{{ url_for('buyer.home') }}" class="btn btn-primary mt-3">
+                        View All Products
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-4 mt-5 bg-dark">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p>&copy; 2023 Online Store</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="{{ url_for('auth.login') }}" class="text-muted">Admin Login</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

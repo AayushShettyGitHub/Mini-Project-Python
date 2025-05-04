@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5 mb-3">Dashboard</h1>
+        <p class="text-muted">Welcome back, {{ current_user.username }}! Here's an overview of your inventory and sales.</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">Products</h5>
+                <h2 class="display-4">{{ product_count }}</h2>
+                <p class="card-text">Total products in inventory</p>
+            </div>
+            <div class="card-footer d-flex">
+                <a href="{{ url_for('inventory.inventory') }}" class="text-white text-decoration-none">View Details</a>
+                <span class="ms-auto">
+                    <i class="fas fa-boxes fa-2x"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">Categories</h5>
+                <h2 class="display-4">{{ category_count }}</h2>
+                <p class="card-text">Product categories</p>
+            </div>
+            <div class="card-footer d-flex">
+                <a href="{{ url_for('inventory.categories') }}" class="text-white text-decoration-none">View Details</a>
+                <span class="ms-auto">
+                    <i class="fas fa-tags fa-2x"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">Orders</h5>
+                <h2 class="display-4">{{ total_orders }}</h2>
+                <p class="card-text">Total completed orders</p>
+            </div>
+            <div class="card-footer d-flex">
+                <a href="{{ url_for('sales.order_history') }}" class="text-white text-decoration-none">View Details</a>
+                <span class="ms-auto">
+                    <i class="fas fa-shopping-cart fa-2x"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body">
+                <h5 class="card-title">Revenue</h5>
+                <h2 class="display-4">${{ total_revenue|round(2) }}</h2>
+                <p class="card-text">Total sales revenue</p>
+            </div>
+            <div class="card-footer d-flex text-dark">
+                <a href="{{ url_for('analytics.analytics') }}" class="text-dark text-decoration-none">View Details</a>
+                <span class="ms-auto">
+                    <i class="fas fa-dollar-sign fa-2x"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Recent Orders -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Orders</h5>
+                <a href="{{ url_for('sales.order_history') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('sales.order_detail', order_number=order.order_number) }}">
+                                        {{ order.order_number }}
+                                    </a>
+                                </td>
+                                <td>{{ order.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <span class="badge {% if order.status == 'paid' %}bg-success{% elif order.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ order.status }}
+                                    </span>
+                                </td>
+                                <td>${{ order.total_amount|round(2) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-shopping-cart fa-3x mb-3 text-muted"></i>
+                    <p>No orders recorded yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Low Stock Alerts -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Low Stock Alerts</h5>
+                <a href="{{ url_for('inventory.inventory') }}" class="btn btn-sm btn-outline-primary">View Inventory</a>
+            </div>
+            <div class="card-body">
+                {% if low_stock_products %}
+                <div class="list-group">
+                    {% for product in low_stock_products %}
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">{{ product.name }}</h6>
+                            <small>Category: {{ product.category.name }}</small>
+                        </div>
+                        <span class="badge bg-danger rounded-pill">{{ product.stock }} left</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+                    <p>All products are well stocked!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ML Predicted Restocking Needs -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Predicted Restocking Needs</h5>
+                <span class="badge bg-info">AI Powered</span>
+            </div>
+            <div class="card-body">
+                {% if stock_predictions %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Current Stock</th>
+                                <th>Predicted Need</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prediction in stock_predictions %}
+                            <tr>
+                                <td>{{ prediction.name }}</td>
+                                <td>{{ prediction.current_stock }}</td>
+                                <td>{{ prediction.predicted_need }}</td>
+                                <td>
+                                    <a href="{{ url_for('inventory.edit_product', id=prediction.product_id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-plus-circle"></i> Restock
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-robot fa-3x mb-3 text-muted"></i>
+                    <p>No restocking predictions available yet. This will appear once you have enough sales data.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Chart -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Sales Overview</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch sales data for the chart
+    fetch('/api/sales_over_time')
+        .then(response => response.json())
+        .then(data => {
+            const dates = data.map(item => item.date);
+            const sales = data.map(item => item.sales);
+            
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Daily Sales ($)',
+                        data: sales,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Sales Trend (Last 30 Days)'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error fetching sales data:', error));
+});
+</script>
+{% endblock %}

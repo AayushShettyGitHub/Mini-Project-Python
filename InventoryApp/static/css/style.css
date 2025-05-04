@@ -1,0 +1,203 @@
+/**
+ * Custom styles for Inventory Management System
+ * Most styling comes from Bootstrap, these are just supplementary styles
+ */
+
+/* General layout improvements */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+footer {
+    flex-shrink: 0;
+}
+
+/* Dashboard cards */
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Improved table styling */
+.table {
+    vertical-align: middle;
+}
+
+/* QR code container */
+.qr-container {
+    background-color: var(--bs-dark);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    display: inline-block;
+    margin: 0 auto;
+}
+
+#qrcode {
+    display: flex;
+    justify-content: center;
+}
+
+#qrcode img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Product image placeholder */
+.product-image-placeholder {
+    background-color: var(--bs-secondary-bg);
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+}
+
+/* Cart quantity controls */
+.quantity-control {
+    display: flex;
+    align-items: center;
+}
+
+.quantity-control button {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 0.5rem;
+}
+
+.quantity-control input {
+    width: 40px;
+    text-align: center;
+    border: none;
+    background: transparent;
+}
+
+/* Better spacing for forms */
+.form-group:not(:last-child) {
+    margin-bottom: 1rem;
+}
+
+/* Dashboard stats cards */
+.stat-card {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.stat-card .icon {
+    font-size: 3rem;
+    opacity: 0.2;
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+}
+
+/* Analytics page */
+.recommendations-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.recommendations-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* Low stock indicator */
+.low-stock {
+    color: var(--bs-danger);
+    font-weight: bold;
+}
+
+.medium-stock {
+    color: var(--bs-warning);
+    font-weight: bold;
+}
+
+/* Payment success animation */
+@keyframes checkmark {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.success-animation i {
+    animation: checkmark 1s ease-in-out;
+}
+
+/* Print styling for QR code */
+@media print {
+    nav, footer, .btn:not(.print-qr) {
+        display: none !important;
+    }
+    
+    .qr-container {
+        text-align: center;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .print-info {
+        text-align: center;
+        margin-top: 1rem;
+    }
+}
+
+/* Responsive table improvements */
+@media (max-width: 768px) {
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .table-responsive th, 
+    .table-responsive td {
+        white-space: nowrap;
+    }
+}
+
+/* Product grid improvements */
+.product-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card .card-body {
+    flex: 1 0 auto;
+}
+
+.product-card .card-footer {
+    margin-top: auto;
+}
+
+/* Fix for navbar dropdown on mobile */
+@media (max-width: 768px) {
+    .navbar .dropdown-menu {
+        position: static !important;
+        float: none;
+        width: auto;
+        margin-top: 0;
+        background-color: transparent;
+        border: 0;
+        box-shadow: none;
+    }
+}

@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Sales List View -->
+{% if not order_detail and not qr_mode %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">Sales & Orders</h1>
+        <p class="text-muted">View and manage sales orders.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ order.order_number }}</td>
+                        <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <span class="badge {% if order.status == 'paid' %}bg-success{% elif order.status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                {{ order.status }}
+                            </span>
+                        </td>
+                        <td>${{ order.total_amount|round(2) }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('sales.order_detail', order_number=order.order_number) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                {% if order.status == 'pending' %}
+                                <a href="{{ url_for('sales.generate_qr', order_number=order.order_number) }}" class="btn btn-outline-info">
+                                    <i class="fas fa-qrcode"></i> QR Code
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-cart fa-4x mb-3 text-muted"></i>
+            <h3>No orders found</h3>
+            <p class="text-muted">Orders will appear here once customers make purchases.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Order Detail View -->
+{% if order_detail %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h1 class="display-5">Order #{{ order.order_number }}</h1>
+        <p class="text-muted">Created: {{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <a href="{{ url_for('sales.sales') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Orders
+        </a>
+        {% if order.status == 'pending' %}
+        <a href="{{ url_for('sales.generate_qr', order_number=order.order_number) }}" class="btn btn-primary">
+            <i class="fas fa-qrcode"></i> Generate QR Code
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Order Items</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items %}
+                            <tr>
+                                <td>{{ item.product.name }}</td>
+                                <td>${{ item.price|round(2) }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td class="text-end">${{ (item.price * item.quantity)|round(2) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3" class="text-end">Total:</th>
+                                <th class="text-end">${{ order.total_amount|round(2) }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Order Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <span>Status:</span>
+                    <span class="badge {% if order.status == 'paid' %}bg-success{% elif order.status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %} fs-6">
+                        {{ order.status|upper }}
+                    </span>
+                </div>
+                {% if order.paid_at %}
+                <div class="d-flex justify-content-between mb-3">
+                    <span>Paid on:</span>
+                    <span>{{ order.paid_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+                {% endif %}
+                <div class="d-flex justify-content-between">
+                    <span>Total Amount:</span>
+                    <span class="fw-bold">${{ order.total_amount|round(2) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- QR Code View -->
+{% if qr_mode %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h1 class="display-5">QR Code for Order #{{ order.order_number }}</h1>
+        <p class="text-muted">Created: {{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <a href="{{ url_for('sales.order_detail', order_number=order.order_number) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Order
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 class="card-title mb-4">Scan to Pay</h3>
+                <div class="mb-4">
+                    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="img-fluid" style="max-width: 300px;">
+                </div>
+                <div class="mb-3">
+                    <p>Order #{{ order.order_number }}</p>
+                    <h4>Total: ${{ order.total_amount|round(2) }}</h4>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Customer can scan this QR code or click the button below to complete payment.
+                </div>
+                
+                <a href="{{ qr_url }}" target="_blank" class="btn btn-primary btn-lg">
+                    <i class="fas fa-external-link-alt"></i> Open Payment Page
+                </a>
+                
+                <div class="mt-4">
+                    <button class="btn btn-outline-secondary" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print QR Code
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">Analytics & Insights</h1>
+        <p class="text-muted">View sales trends and get AI-powered recommendations.</p>
+    </div>
+</div>
+
+<!-- Date Range Selection -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="mb-3">Date Range</h5>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="startDate" value="{{ start_date.strftime('%Y-%m-%d') }}">
+            </div>
+            <div class="col-md-4">
+                <label for="endDate" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="endDate" value="{{ end_date.strftime('%Y-%m-%d') }}">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button id="updateCharts" class="btn btn-primary w-100">Update Charts</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Sales by Category</h5>
+                <span class="badge bg-primary">Chart</span>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Sales Trend</h5>
+                <span class="badge bg-primary">Chart</span>
+            </div>
+            <div class="card-body">
+                <canvas id="salesTrendChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Current Stock Levels</h5>
+                <span class="badge bg-primary">Chart</span>
+            </div>
+            <div class="card-body">
+                <canvas id="stockChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Top Performing Products</h5>
+                <span class="badge bg-primary">Chart</span>
+            </div>
+            <div class="card-body">
+                <canvas id="productPerformanceChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Recommendations -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Product Recommendations (KNN)</h5>
+        <span class="badge bg-info">AI Powered</span>
+    </div>
+    <div class="card-body">
+        {% if recommendations %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Recommended Products</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in recommendations %}
+                    <tr>
+                        <td>{{ rec.product_name }}</td>
+                        <td>
+                            {% if rec.recommendations %}
+                            <ul class="list-unstyled mb-0">
+                                {% for item in rec.recommendations %}
+                                <li><i class="fas fa-arrow-right me-2 text-primary"></i> {{ item.name }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <span class="text-muted">No recommendations available</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-robot fa-4x mb-3 text-muted"></i>
+            <h4>No recommendations available</h4>
+            <p class="text-muted">Recommendations will appear once you have more sales data.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts
+    loadCharts();
+    
+    // Update charts when date range changes
+    document.getElementById('updateCharts').addEventListener('click', function() {
+        loadCharts();
+    });
+    
+    function loadCharts() {
+        // Get selected date range
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        
+        // Load sales by category chart
+        fetch('/api/sales_by_category')
+            .then(response => response.json())
+            .then(data => {
+                createCategoryChart(data);
+            })
+            .catch(error => console.error('Error loading category data:', error));
+        
+        // Load sales trend chart
+        fetch('/api/sales_over_time')
+            .then(response => response.json())
+            .then(data => {
+                createSalesTrendChart(data);
+            })
+            .catch(error => console.error('Error loading sales trend data:', error));
+        
+        // Load stock levels chart
+        fetch('/api/stock_levels')
+            .then(response => response.json())
+            .then(data => {
+                createStockChart(data);
+            })
+            .catch(error => console.error('Error loading stock data:', error));
+        
+        // Load product performance chart
+        fetch('/api/product_performance')
+            .then(response => response.json())
+            .then(data => {
+                createProductPerformanceChart(data);
+            })
+            .catch(error => console.error('Error loading product performance data:', error));
+    }
+    
+    function createCategoryChart(data) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (window.categoryChart) {
+            window.categoryChart.destroy();
+        }
+        
+        window.categoryChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: data.map(item => item.category),
+                datasets: [{
+                    data: data.map(item => item.sales),
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(199, 199, 199, 0.7)',
+                        'rgba(83, 102, 255, 0.7)',
+                        'rgba(40, 159, 64, 0.7)',
+                        'rgba(210, 199, 199, 0.7)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales Distribution by Category'
+                    }
+                }
+            }
+        });
+    }
+    
+    function createSalesTrendChart(data) {
+        const ctx = document.getElementById('salesTrendChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (window.salesTrendChart) {
+            window.salesTrendChart.destroy();
+        }
+        
+        window.salesTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(item => item.date),
+                datasets: [{
+                    label: 'Daily Sales ($)',
+                    data: data.map(item => item.sales),
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales Trend Over Time'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createStockChart(data) {
+        const ctx = document.getElementById('stockChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (window.stockChart) {
+            window.stockChart.destroy();
+        }
+        
+        // Only show top 10 products if there are more
+        let chartData = data;
+        if (data.length > 10) {
+            chartData = data.slice(0, 10);
+        }
+        
+        window.stockChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.map(item => item.product),
+                datasets: [{
+                    label: 'Current Stock',
+                    data: chartData.map(item => item.stock),
+                    backgroundColor: chartData.map(item => {
+                        if (item.stock <= 5) return 'rgba(255, 99, 132, 0.7)';
+                        if (item.stock <= 20) return 'rgba(255, 206, 86, 0.7)';
+                        return 'rgba(75, 192, 192, 0.7)';
+                    }),
+                    borderColor: chartData.map(item => {
+                        if (item.stock <= 5) return 'rgba(255, 99, 132, 1)';
+                        if (item.stock <= 20) return 'rgba(255, 206, 86, 1)';
+                        return 'rgba(75, 192, 192, 1)';
+                    }),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Current Stock Levels'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createProductPerformanceChart(data) {
+        const ctx = document.getElementById('productPerformanceChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (window.productPerformanceChart) {
+            window.productPerformanceChart.destroy();
+        }
+        
+        window.productPerformanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(item => item.product),
+                datasets: [{
+                    label: 'Revenue ($)',
+                    data: data.map(item => item.revenue),
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    order: 1
+                }, {
+                    label: 'Quantity Sold',
+                    data: data.map(item => item.quantity),
+                    type: 'line',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    fill: false,
+                    order: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Top Performing Products'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Revenue ($)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
